@@ -167,3 +167,25 @@
         min-deposit: (var-get min-deposit),
         max-pool-size: (var-get max-pool-size)
     })
+;; Administrative Functions
+
+(define-public (set-pool-active (active bool))
+    (begin
+        (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+        (var-set pool-active active)
+        (ok true)))
+
+(define-public (set-yield-rate (new-rate uint))
+    (begin
+        (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+        (asserts! (<= new-rate u10000) err-invalid-amount)  ;; Max 100% APY
+        (var-set yield-rate new-rate)
+        (ok true)))
+
+(define-public (set-pool-parameters (new-min uint) (new-max uint))
+    (begin
+        (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+        (asserts! (< new-min new-max) err-invalid-amount)
+        (var-set min-deposit new-min)
+        (var-set max-pool-size new-max)
+        (ok true)))

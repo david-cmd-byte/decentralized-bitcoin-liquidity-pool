@@ -153,3 +153,17 @@
                     accumulated-yield: u0
                 })
             (ok yield-to-claim))))
+
+;; Read-only Functions
+
+(define-read-only (get-user-position (user principal))
+    (map-get? user-deposits user))
+
+(define-read-only (get-pool-stats)
+    {
+        total-liquidity: (var-get total-liquidity),
+        pool-active: (var-get pool-active),
+        current-yield-rate: (var-get yield-rate),
+        min-deposit: (var-get min-deposit),
+        max-pool-size: (var-get max-pool-size)
+    })

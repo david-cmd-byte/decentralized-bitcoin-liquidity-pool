@@ -42,3 +42,34 @@
     uint  ;; block height
     uint  ;; yield rate at that height
 )
+
+;; Private Functions
+
+(define-private (calculate-yield (amount uint) (blocks uint))
+    (let (
+        (rate (var-get yield-rate))
+        (blocks-per-year u52560)  ;; ~10 min block time
+        (yield-amount (/ (* amount (* rate blocks)) (* blocks-per-year u10000)))
+    )
+    yield-amount))
+
+(define-private (update-user-yield (user principal))
+    (let (
+        (user-data (unwrap! (map-get? user-deposits user) (err u0)))
+        (current-height block-height)
+        (blocks-since-last (- current-height (get last-deposit-height user-data)))
+        (new-yield (calculate-yield (get amount user-data) blocks-since-last))
+    )
+    (map-set user-deposits
+        user
+        {
+            amount: (get amount user-data),
+            last-deposit-height: current-height,
+            accumulated-yield: (+ (get accumulated-yield user-data) new-yield)
+        })
+    (ok true)))
+
+(define-private (validate-bool (value bool))
+    (if value
+        (ok true)
+        (err err-invalid-bool)))

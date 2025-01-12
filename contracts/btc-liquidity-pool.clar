@@ -133,3 +133,23 @@
             
             (var-set total-liquidity (- (var-get total-liquidity) amount))
             (ok true))))
+
+;; Yield Claiming
+(define-public (claim-yield)
+    (let (
+        (user tx-sender)
+        (user-data (unwrap! (map-get? user-deposits user) err-not-found))
+    )
+        (try! (update-user-yield user))
+        (let (
+            (updated-data (unwrap! (map-get? user-deposits user) err-not-found))
+            (yield-to-claim (get accumulated-yield updated-data))
+        )
+            (map-set user-deposits
+                user
+                {
+                    amount: (get amount updated-data),
+                    last-deposit-height: block-height,
+                    accumulated-yield: u0
+                })
+            (ok yield-to-claim))))

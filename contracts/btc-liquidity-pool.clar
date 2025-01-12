@@ -25,6 +25,7 @@
 (define-constant err-below-min-deposit (err u109))
 (define-constant err-above-max-deposit (err u110))
 (define-constant err-paused (err u111))
+(define-constant err-event-error (err u112))
 
 ;; State Variables
 
@@ -80,16 +81,16 @@
 ;; Private Functions
 
 (define-private (log-event (event-type (string-ascii 20)) (user principal) (amount uint))
-    (let ((counter (var-get event-counter)))
-        (map-set events counter
+    (begin
+        (map-set events (var-get event-counter)
             {
                 event-type: event-type,
                 user: user,
                 amount: amount,
                 block-height: block-height
             })
-        (var-set event-counter (+ counter u1))
-        (ok true)))
+        (var-set event-counter (+ (var-get event-counter) u1))
+        true))
 
 (define-private (calculate-yield (amount uint) (blocks uint))
     (let (
@@ -170,7 +171,7 @@
             }))
     
     (var-set total-liquidity new-liquidity)
-    (try! (log-event "DEPOSIT" user amount))
+    (asserts! (log-event "DEPOSIT" user amount) err-event-error)
     (ok true)))
 
 ;; Withdrawal Function
@@ -200,7 +201,7 @@
                 })
             
             (var-set total-liquidity (- (var-get total-liquidity) amount))
-            (try! (log-event "WITHDRAW" user amount))
+            (asserts! (log-event "WITHDRAW" user amount) err-event-error)
             (ok true))))
 
 ;; Yield Claiming
@@ -226,7 +227,7 @@
                     total-withdrawals: (get total-withdrawals updated-data)
                 })
             (var-set total-yield-paid (+ (var-get total-yield-paid) yield-to-claim))
-            (try! (log-event "CLAIM" user yield-to-claim))
+            (asserts! (log-event "CLAIM" user yield-to-claim) err-event-error)
             (ok yield-to-claim))))
 
 ;; Read-only Functions
@@ -255,7 +256,7 @@
     (begin
         (asserts! (is-eq tx-sender contract-owner) err-owner-only)
         (var-set pool-active active)
-        (try! (log-event "POOL_STATUS" contract-owner (if active u1 u0)))
+        (asserts! (log-event "POOL_STATUS" contract-owner (if active u1 u0)) err-event-error)
         (ok true)))
 
 (define-public (emergency-pause)
@@ -263,7 +264,7 @@
         (asserts! (is-eq tx-sender contract-owner) err-owner-only)
         (var-set emergency-paused true)
         (var-set last-emergency-action block-height)
-        (try! (log-event "EMERGENCY_PAUSE" contract-owner u0))
+        (asserts! (log-event "EMERGENCY_PAUSE" contract-owner u0) err-event-error)
         (ok true)))
 
 (define-public (emergency-resume)
@@ -271,7 +272,7 @@
         (asserts! (is-eq tx-sender contract-owner) err-owner-only)
         (asserts! (>= (- block-height (var-get last-emergency-action)) emergency-cooldown-period) err-cooldown-active)
         (var-set emergency-paused false)
-        (try! (log-event "EMERGENCY_RESUME" contract-owner u0))
+        (asserts! (log-event "EMERGENCY_RESUME" contract-owner u0) err-event-error)
         (ok true)))
 
 (define-public (set-yield-rate (new-rate uint))
@@ -285,7 +286,7 @@
                 total-liquidity: (var-get total-liquidity),
                 timestamp: block-height
             })
-        (try! (log-event "YIELD_RATE" contract-owner new-rate))
+        (asserts! (log-event "YIELD_RATE" contract-owner new-rate) err-event-error)
         (ok true)))
 
 (define-public (set-pool-parameters (new-min uint) (new-max-per-user uint) (new-max-pool uint))
@@ -296,19 +297,19 @@
         (var-set min-deposit new-min)
         (var-set max-deposit-per-user new-max-per-user)
         (var-set max-pool-size new-max-pool)
-        (try! (log-event "PARAMS_UPDATE" contract-owner u0))
+        (asserts! (log-event "PARAMS_UPDATE" contract-owner u0) err-event-error)
         (ok true)))
 
 (define-public (add-operator (operator principal))
     (begin
         (asserts! (is-eq tx-sender contract-owner) err-owner-only)
         (map-set authorized-operators operator true)
-        (try! (log-event "ADD_OPERATOR" operator u0))
+        (asserts! (log-event "ADD_OPERATOR" operator u0) err-event-error)
         (ok true)))
 
 (define-public (remove-operator (operator principal))
     (begin
         (asserts! (is-eq tx-sender contract-owner) err-owner-only)
         (map-set authorized-operators operator false)
-        (try! (log-event "REMOVE_OPERATOR" operator u0))
+        (asserts! (log-event "REMOVE_OPERATOR" operator u0) err-event-error)
         (ok true)))

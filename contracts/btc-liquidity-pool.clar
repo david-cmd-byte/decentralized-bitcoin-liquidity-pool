@@ -73,3 +73,37 @@
     (if value
         (ok true)
         (err err-invalid-bool)))
+
+;; Public Functions
+
+;; Deposit Function
+(define-public (deposit (amount uint))
+    (let (
+        (user tx-sender)
+        (current-liquidity (var-get total-liquidity))
+        (new-liquidity (+ current-liquidity amount))
+    )
+    (asserts! (var-get pool-active) err-pool-inactive)
+    (asserts! (>= amount (var-get min-deposit)) err-invalid-amount)
+    (asserts! (<= new-liquidity (var-get max-pool-size)) err-pool-full)
+    
+    (match (map-get? user-deposits user)
+        existing-deposit (begin
+            (try! (update-user-yield user))
+            (map-set user-deposits
+                user
+                {
+                    amount: (+ amount (get amount existing-deposit)),
+                    last-deposit-height: block-height,
+                    accumulated-yield: (get accumulated-yield existing-deposit)
+                }))
+        (map-set user-deposits
+            user
+            {
+                amount: amount,
+                last-deposit-height: block-height,
+                accumulated-yield: u0
+            }))
+    
+    (var-set total-liquidity new-liquidity)
+    (ok true)))

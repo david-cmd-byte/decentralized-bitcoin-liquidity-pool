@@ -130,6 +130,11 @@
         (asserts! (<= (+ (var-get total-liquidity) amount) (var-get max-pool-size)) err-pool-full)
         (ok true)))
 
+(define-private (validate-bool (value bool))
+    (if value
+        (ok true)
+        (ok false)))
+
 ;; Public Functions
 
 ;; Deposit Function

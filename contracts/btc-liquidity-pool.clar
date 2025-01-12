@@ -27,3 +27,18 @@
 (define-data-var max-pool-size uint u100000000000)  ;; 1000 BTC in sats
 (define-data-var yield-rate uint u500)              ;; 5% APY in basis points
 (define-data-var last-yield-calculation uint block-height)
+
+;; Data Maps
+
+(define-map user-deposits
+    principal
+    {
+        amount: uint,
+        last-deposit-height: uint,
+        accumulated-yield: uint
+    })
+
+(define-map yield-snapshots
+    uint  ;; block height
+    uint  ;; yield rate at that height
+)

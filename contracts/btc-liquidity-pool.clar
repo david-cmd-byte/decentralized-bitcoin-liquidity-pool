@@ -18,3 +18,12 @@
 (define-constant err-invalid-amount (err u105))
 (define-constant err-pool-full (err u106))
 (define-constant err-invalid-bool (err u107))
+
+;; State Variables
+
+(define-data-var total-liquidity uint u0)
+(define-data-var pool-active bool true)
+(define-data-var min-deposit uint u1000000)         ;; 0.01 BTC in sats
+(define-data-var max-pool-size uint u100000000000)  ;; 1000 BTC in sats
+(define-data-var yield-rate uint u500)              ;; 5% APY in basis points
+(define-data-var last-yield-calculation uint block-height)

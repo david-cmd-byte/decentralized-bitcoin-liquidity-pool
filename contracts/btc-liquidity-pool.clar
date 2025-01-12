@@ -107,3 +107,29 @@
     
     (var-set total-liquidity new-liquidity)
     (ok true)))
+
+;; Withdrawal Function
+(define-public (withdraw (amount uint))
+    (let (
+        (user tx-sender)
+        (user-data (unwrap! (map-get? user-deposits user) err-not-found))
+        (current-balance (get amount user-data))
+    )
+        (asserts! (var-get pool-active) err-pool-inactive)
+        (asserts! (<= amount current-balance) err-insufficient-balance)
+        
+        (try! (update-user-yield user))
+        (let (
+            (updated-data (unwrap! (map-get? user-deposits user) err-not-found))
+            (remaining-balance (- current-balance amount))
+        )
+            (map-set user-deposits
+                user
+                {
+                    amount: remaining-balance,
+                    last-deposit-height: block-height,
+                    accumulated-yield: (get accumulated-yield updated-data)
+                })
+            
+            (var-set total-liquidity (- (var-get total-liquidity) amount))
+            (ok true))))
